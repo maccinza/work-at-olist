@@ -11,8 +11,8 @@ def main():
 
     if project_root not in sys.path:
         sys.path.append(project_root)
-    
-    os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'bookstore.settings')
+
+    os.environ.setdefault("DJANGO_SETTINGS_MODULE", "bookstore.settings")
     try:
         from django.core.management import execute_from_command_line
     except ImportError as exc:
@@ -24,5 +24,5 @@ def main():
     execute_from_command_line(sys.argv)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

@@ -11,8 +11,8 @@ class Author(models.Model):
     class Meta:
         """Meta definition for Author"""
 
-        verbose_name = 'Author'
-        verbose_name_plural = 'Authors'
+        verbose_name = "Author"
+        verbose_name_plural = "Authors"
 
     def __str__(self):
         """Unicode representation of Author"""

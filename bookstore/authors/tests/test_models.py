@@ -1,5 +1,5 @@
-from django.test import TestCase
 from django.db import IntegrityError, transaction
+from django.test import TestCase
 
 from authors.models import Author
 
@@ -9,7 +9,7 @@ class TestAuthor(TestCase):
         """It is possible to create an author inserting it into the db"""
 
         self.assertEqual(Author.objects.count(), 0)
-        
+
         author_name = "John Doe"
         author = Author(name=author_name)
         author.save()
@@ -53,7 +53,7 @@ class TestAuthor(TestCase):
         author_name = "John Doe"
         expected_message = (
             f"duplicate key value violates unique constraint "
-            f"\"authors_author_name_key\"\nDETAIL:  Key (name)="
+            f'"authors_author_name_key"\nDETAIL:  Key (name)='
             f"({author_name}) already exists.\n"
         )
 

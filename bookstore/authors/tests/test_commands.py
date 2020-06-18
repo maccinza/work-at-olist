@@ -1,5 +1,4 @@
 import os
-import sys
 from io import StringIO
 from unittest.mock import patch
 
@@ -21,18 +20,20 @@ class TestImportAuthorsCommand(TestCase):
         command = Command()
         success_message = f"This is a {MessageType.SUCCESS.value} test message"
         error_message = f"This is an {MessageType.ERROR.value} test message"
-        
+
         with patch.object(command, "stdout", new=output):
             command._write_message(success_message, MessageType.SUCCESS)
             command._write_message(error_message, MessageType.ERROR)
-        
+
         self.assertIn(success_message, output.getvalue())
         self.assertIn(error_message, output.getvalue())
 
     def test_successful_collect_data(self):
         """It is able to read the input file data into set"""
         command = Command()
-        data = command._collect_data(os.path.join(FIXTURES_DIR, "test_authors.csv"))
+        data = command._collect_data(
+            os.path.join(FIXTURES_DIR, "test_authors.csv")
+        )
         self.assertIsInstance(data, set)
         self.assertEqual(data, EXPECTED_NAMES)
 
@@ -53,13 +54,14 @@ class TestImportAuthorsCommand(TestCase):
         command = Command()
         filepath = os.path.join(FIXTURES_DIR, "test_authors.csv")
         error_message = "Simulated error message"
-        expected_message = f"Error trying to read {filepath}. Got {error_message}"
+        expected_message = (
+            f"Error trying to read {filepath}. Got {error_message}"
+        )
         with patch.object(command, "stdout", new=output):
             with patch("builtins.open", side_effect=IOError(error_message)):
                 command._collect_data(filepath)
-        
-        self.assertIn(expected_message, output.getvalue())
 
+        self.assertIn(expected_message, output.getvalue())
 
     def test_successful_perform_insertion(self):
         """It properly inserts provided authors data into the database"""
@@ -73,8 +75,7 @@ class TestImportAuthorsCommand(TestCase):
             command._perform_insertion(data, filepath)
 
         self.assertIn(
-            f"Successfully imported authors from {filepath}",
-            output.getvalue()
+            f"Successfully imported authors from {filepath}", output.getvalue()
         )
         self.assertEqual(Author.objects.count(), len(data))
 
@@ -95,8 +96,7 @@ class TestImportAuthorsCommand(TestCase):
             command._perform_insertion(data, filepath)
 
         self.assertIn(
-            f"Successfully imported authors from {filepath}",
-            output.getvalue()
+            f"Successfully imported authors from {filepath}", output.getvalue()
         )
         self.assertEqual(Author.objects.count(), len(data))
 
@@ -113,13 +113,13 @@ class TestImportAuthorsCommand(TestCase):
         with patch.object(command, "stdout", new=output):
             with patch(
                 "authors.management.commands.import_authors.import_authors",
-                side_effect=IOError(error_message)
+                side_effect=IOError(error_message),
             ):
                 command._perform_insertion(data, filepath)
 
         self.assertIn(
             f"Error trying to import authors names from {filepath}",
-            output.getvalue()
+            output.getvalue(),
         )
         self.assertIn(error_message, output.getvalue())
         self.assertEqual(Author.objects.count(), 0)
@@ -139,8 +139,7 @@ class TestImportAuthorsCommand(TestCase):
             command._perform_insertion(data, filepath, faster=True)
 
         self.assertIn(
-            f"Successfully imported authors from {filepath}",
-            output.getvalue()
+            f"Successfully imported authors from {filepath}", output.getvalue()
         )
         data.seek(0)
         data = {name for name in data.read().split("\n")}
@@ -166,13 +165,13 @@ class TestImportAuthorsCommand(TestCase):
         with patch.object(command, "stdout", new=output):
             with patch(
                 "authors.management.commands.import_authors.import_authors_faster",
-                side_effect=IOError(error_message)
+                side_effect=IOError(error_message),
             ):
                 command._perform_insertion(data, filepath, faster=True)
 
         self.assertIn(
             f"Error trying to import authors names from {filepath}",
-            output.getvalue()
+            output.getvalue(),
         )
         self.assertIn(error_message, output.getvalue())
         self.assertEqual(Author.objects.count(), 0)
@@ -187,8 +186,7 @@ class TestImportAuthorsCommand(TestCase):
 
         self.assertEqual(Author.objects.count(), 3)
         self.assertIn(
-            f"Successfully imported authors from {filepath}",
-            output.getvalue()
+            f"Successfully imported authors from {filepath}", output.getvalue()
         )
 
     def test_successful_command_faster(self):
@@ -204,8 +202,7 @@ class TestImportAuthorsCommand(TestCase):
 
         self.assertEqual(Author.objects.count(), 3)
         self.assertIn(
-            f"Successfully imported authors from {filepath}",
-            output.getvalue()
+            f"Successfully imported authors from {filepath}", output.getvalue()
         )
 
     def test_failing_command_data(self):
@@ -219,7 +216,7 @@ class TestImportAuthorsCommand(TestCase):
 
         with patch(
             "authors.management.commands.import_authors.Command._collect_data",
-            return_value=None
+            return_value=None,
         ):
             call_command("import_authors", filepath, stdout=output)
 
@@ -227,7 +224,7 @@ class TestImportAuthorsCommand(TestCase):
         self.assertIn(
             f"Could not collect data from {filepath} properly or the "
             f"file is empty",
-            output.getvalue()
+            output.getvalue(),
         )
 
     def test_failing_command_file(self):
@@ -245,5 +242,5 @@ class TestImportAuthorsCommand(TestCase):
         self.assertEqual(Author.objects.count(), 0)
         self.assertIn(
             f"Provided filepath {filepath} does not exist or is not a file",
-            output.getvalue()
+            output.getvalue(),
         )

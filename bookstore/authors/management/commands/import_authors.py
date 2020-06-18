@@ -5,8 +5,6 @@ from typing import IO, Set, Union
 
 from django.core.management.base import BaseCommand
 
-
-from authors.models import Author
 from authors.utils import import_authors, import_authors_faster
 
 
@@ -23,9 +21,7 @@ class Command(BaseCommand):
         parser.add_argument("--faster", action="store_true")
 
     def _write_message(
-        self,
-        message: str,
-        message_type: MessageType = MessageType.SUCCESS,
+        self, message: str, message_type: MessageType = MessageType.SUCCESS,
     ) -> None:
         if message_type == MessageType.SUCCESS:
             self.stdout.write(self.style.SUCCESS(message))
@@ -33,9 +29,7 @@ class Command(BaseCommand):
             self.stdout.write(self.style.ERROR(message))
 
     def _collect_data(
-        self,
-        filepath: str,
-        faster: bool = False,
+        self, filepath: str, faster: bool = False,
     ) -> Union[IO, Set]:
         data = set()
         try:
@@ -49,19 +43,14 @@ class Command(BaseCommand):
         except Exception as exc:
             self._write_message(
                 f"Error trying to read {filepath}. Got {str(exc)}",
-                MessageType.ERROR
+                MessageType.ERROR,
             )
         return data
 
     def _perform_insertion(
-        self,
-        data: Union[IO, Set],
-        filepath: str,
-        faster: bool = False
+        self, data: Union[IO, Set], filepath: str, faster: bool = False
     ) -> None:
-        error_msg = (
-            f"Error trying to import authors names from {filepath}. "
-        )
+        error_msg = f"Error trying to import authors names from {filepath}. "
         success_message = f"Successfully imported authors from {filepath}"
 
         if faster:
@@ -93,17 +82,17 @@ class Command(BaseCommand):
 
         if path_exists and is_file and is_csv:
             data = self._collect_data(filepath, faster)
-            
+
             if data:
                 self._perform_insertion(data, filepath, faster)
             else:
                 self._write_message(
                     f"Could not collect data from {filepath} properly or the "
                     f"file is empty",
-                    MessageType.ERROR
+                    MessageType.ERROR,
                 )
         else:
             self._write_message(
                 f"Provided filepath {filepath} does not exist or is not a file",
-                MessageType.ERROR
+                MessageType.ERROR,
             )
