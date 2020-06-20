@@ -3,17 +3,13 @@ from io import StringIO
 from unittest.mock import patch
 
 from django.core.management import call_command
-from django.test import TestCase
 
 from authors.management.commands.import_authors import Command, MessageType
 from authors.models import Author
-
-APP_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-FIXTURES_DIR = os.path.join(APP_DIR, "tests/fixtures")
-EXPECTED_NAMES = {"Richard Flowers", "Jody Vargas", "Susan Myers"}
+from authors.tests.base import EXPECTED_NAMES, FIXTURES_DIR, TestAuthorsBase
 
 
-class TestImportAuthorsCommand(TestCase):
+class TestImportAuthorsCommand(TestAuthorsBase):
     def test_write_message(self):
         """Command messages are correctly written to stdout"""
         output = StringIO()
@@ -184,7 +180,7 @@ class TestImportAuthorsCommand(TestCase):
 
         call_command("import_authors", filepath, stdout=output)
 
-        self.assertEqual(Author.objects.count(), 3)
+        self.assertEqual(Author.objects.count(), len(EXPECTED_NAMES))
         self.assertIn(
             f"Successfully imported authors from {filepath}", output.getvalue()
         )
@@ -200,7 +196,7 @@ class TestImportAuthorsCommand(TestCase):
 
         call_command("import_authors", filepath, "--faster", stdout=output)
 
-        self.assertEqual(Author.objects.count(), 3)
+        self.assertEqual(Author.objects.count(), len(EXPECTED_NAMES))
         self.assertIn(
             f"Successfully imported authors from {filepath}", output.getvalue()
         )

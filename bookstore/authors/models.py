@@ -13,6 +13,7 @@ class Author(models.Model):
 
         verbose_name = "Author"
         verbose_name_plural = "Authors"
+        ordering = ["name"]
 
     def __str__(self):
         """Unicode representation of Author"""

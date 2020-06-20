@@ -37,6 +37,8 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "rest_framework",
+    "django_filters",
     "authors",
 ]
 
@@ -123,3 +125,9 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/3.0/howto/static-files/
 
 STATIC_URL = "/static/"
+
+SILENCED_SYSTEM_CHECKS = ["rest_framework.W001"]
+
+REST_FRAMEWORK = {
+    "PAGE_SIZE": 1000,
+}
