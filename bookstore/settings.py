@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     "rest_framework",
     "django_filters",
     "authors",
+    "books",
 ]
 
 MIDDLEWARE = [
@@ -131,3 +132,7 @@ SILENCED_SYSTEM_CHECKS = ["rest_framework.W001"]
 REST_FRAMEWORK = {
     "PAGE_SIZE": 1000,
 }
+
+
+MIN_EDITION = os.environ.get("MIN_EDITION", 1)
+MIN_PUBLICATION_YEAR = os.environ.get("MIN_PUBLICATION_YEAR", 1500)

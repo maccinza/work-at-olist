@@ -1,3 +1,5 @@
+from datetime import date
+
 from rest_framework import routers
 
 
@@ -11,3 +13,8 @@ class DefaultRouter(routers.DefaultRouter):
              router: Router instance containing route definitions.
         """
         self.registry.extend(router.registry)
+
+
+def current_year():
+    """Gets current calendar year"""
+    return date.today().year
