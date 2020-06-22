@@ -1,12 +1,12 @@
 from enum import Enum
 
-from django.db import transaction
+from django.db import models, transaction
 
 from authors.models import Author
 from books.models import Book
 from rest_framework.exceptions import NotFound, ValidationError
 from rest_framework.serializers import (
-    CharField,
+    IntegerField,
     ListSerializer,
     ModelSerializer,
 )
@@ -17,10 +17,24 @@ class Operation(Enum):
     UPDATE = "update"
 
 
+class CustomListSerializer(ListSerializer):
+    def to_representation(self, data):
+        """
+        List of object instances -> List of dicts of primitive datatypes.
+        """
+        # Dealing with nested relationships, data can be a Manager,
+        # so, first get a queryset from the Manager if needed
+        iterable = data.all() if isinstance(data, models.Manager) else data
+        if len(iterable) > 0 and isinstance(iterable[0], Author):
+            return [self.child.to_representation(item.pk) for item in iterable]
+
+        return [self.child.to_representation(item) for item in iterable]
+
+
 class BookSerializer(ModelSerializer):
     """Serializer for Book data model"""
 
-    authors = ListSerializer(child=CharField())
+    authors = CustomListSerializer(child=IntegerField())
 
     class Meta:
         model = Book
@@ -32,32 +46,33 @@ class BookSerializer(ModelSerializer):
         It defaults to handling an empty list of authors
         """
         if not message:
-            message = "Please provide at least one author name"
+            message = "Please provide at least one author id"
         raise ValidationError({"detail": message})
 
-    def _raise_not_found_error(self, missing_names):
+    def _raise_not_found_error(self, missing_ids):
         """
         Helper method for raising NotFound error when given authors
         are not found"""
         message = (
-            f"Failed to find some authors: " f"{', '.join(missing_names)}"
+            f"Failed to find authors with the following ids: "
+            f"{', '.join([str(_id) for _id in missing_ids])}"
         )
         raise NotFound(detail=message)
 
     @transaction.atomic
-    def _update_authors(self, book, authors_names, operation=Operation.CREATE):
+    def _update_authors(self, book, authors_ids, operation=Operation.CREATE):
         """Helper method for updating authors relations on a given book"""
-        authors = Author.objects.filter(name__in=authors_names)
-        if authors.count() == len(authors_names):
+        authors = Author.objects.filter(pk__in=authors_ids)
+        if authors.count() == len(authors_ids):
             if operation == Operation.UPDATE:
                 book.authors.clear()
             for author in authors:
                 book.authors.add(author)
             book.save()
         else:
-            existing_names = {author.name for author in authors}
-            missing_names = set(authors_names) - existing_names
-            self._raise_not_found_error(missing_names)
+            existing_authors = {author.pk for author in authors}
+            missing_authors = set(authors_ids) - existing_authors
+            self._raise_not_found_error(missing_authors)
 
         return book
 
@@ -67,12 +82,12 @@ class BookSerializer(ModelSerializer):
         Creates a Book record with given attributes and authors if
         given authors exist in the database
         """
-        authors_names = validated_data.pop("authors")
-        if not authors_names:
+        authors_ids = validated_data.pop("authors")
+        if not authors_ids:
             self._raise_validation_error()
 
         book = Book.objects.create(**validated_data)
-        return self._update_authors(book, authors_names)
+        return self._update_authors(book, authors_ids)
 
     @transaction.atomic
     def update(self, instance, validated_data):
@@ -80,18 +95,18 @@ class BookSerializer(ModelSerializer):
         Updates or partially updates a Book record with given
         attributes and authors
         """
-        authors_names = validated_data.pop("authors", None)
+        authors_ids = validated_data.pop("authors", None)
 
         for attribute, value in validated_data.items():
             setattr(instance, attribute, value)
         instance.save()
 
-        if isinstance(authors_names, list):
-            if not authors_names:
+        if isinstance(authors_ids, list):
+            if not authors_ids:
                 self._raise_validation_error()
             else:
                 return self._update_authors(
-                    instance, authors_names, Operation.UPDATE
+                    instance, authors_ids, Operation.UPDATE
                 )
 
         return instance
