@@ -22,8 +22,6 @@ class CustomListSerializer(ListSerializer):
         """
         List of object instances -> List of dicts of primitive datatypes.
         """
-        # Dealing with nested relationships, data can be a Manager,
-        # so, first get a queryset from the Manager if needed
         iterable = data.all() if isinstance(data, models.Manager) else data
         if len(iterable) > 0 and isinstance(iterable[0], Author):
             return [self.child.to_representation(item.pk) for item in iterable]
