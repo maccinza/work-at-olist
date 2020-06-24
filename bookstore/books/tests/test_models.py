@@ -1,9 +1,11 @@
 import random
+from datetime import date
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.test import TestCase
 
+from authors.models import Author
 from authors.tests.factories import AuthorFactory
 from books.models import Book
 from books.tests.factories import BookFactory
@@ -12,6 +14,10 @@ from books.tests.factories import BookFactory
 class TestBook(TestCase):
     def setUp(self, *args, **kwargs):
         self.authors = AuthorFactory.create_batch(10)
+        super().setUp(*args, **kwargs)
+
+    def tearDown(self, *args, **kwargs):
+        Author.objects.all().delete()
         super().setUp(*args, **kwargs)
 
     def test_create_book(self):
@@ -29,7 +35,7 @@ class TestBook(TestCase):
     def test_create_book_invalid_edition(self):
         """
         It is not possible to create a Book with a edition value below
-        the expected
+        the permitted values
         """
         expected_errors = {
             "edition": [
@@ -43,3 +49,64 @@ class TestBook(TestCase):
         with self.assertRaises(ValidationError) as raised:
             BookFactory.create(authors=authors, edition=0)
         self.assertEqual(raised.exception.message_dict, expected_errors)
+        self.assertEqual(Book.objects.count(), 0)
+
+    def test_create_book_invalid_publication_year(self):
+        """
+        It is not possible to create a book with a publication year either
+        below or above the permitted values
+        """
+        expected_errors = {
+            "publication_year": [
+                f"Ensure this value is greater than or equal to "
+                f"{settings.MIN_PUBLICATION_YEAR}."
+            ]
+        }
+
+        self.assertEqual(Book.objects.count(), 0)
+        authors = random.choices(self.authors, k=2)
+        with self.assertRaises(ValidationError) as raised:
+            BookFactory.create(authors=authors, publication_year=1200)
+        self.assertEqual(raised.exception.message_dict, expected_errors)
+        self.assertEqual(Book.objects.count(), 0)
+
+        expected_errors = {
+            "publication_year": [
+                f"Ensure this value is less than or equal to "
+                f"{date.today().year + 1}."
+            ]
+        }
+
+        with self.assertRaises(ValidationError) as raised:
+            BookFactory.create(
+                authors=authors, publication_year=date.today().year + 10
+            )
+        self.assertEqual(raised.exception.message_dict, expected_errors)
+
+    def test_create_duplicate_book(self):
+        """
+        It is not possible to create a duplicate Book, with the same name,
+        edition, and publication_year
+        """
+        expected_errors = {
+            "__all__": [
+                "Book with this Name, Edition and Publication year "
+                "already exists."
+            ]
+        }
+
+        self.assertEqual(Book.objects.count(), 0)
+        authors = random.choices(self.authors, k=2)
+        book_parameters = {
+            "name": "Duplicate Book",
+            "edition": 1,
+            "publication_year": 2000,
+            "authors": authors,
+        }
+        BookFactory.create(**book_parameters)
+        self.assertEqual(Book.objects.count(), 1)
+        with self.assertRaises(ValidationError) as raised:
+            BookFactory.create(**book_parameters)
+
+        self.assertEqual(raised.exception.message_dict, expected_errors)
+        self.assertEqual(Book.objects.count(), 1)
