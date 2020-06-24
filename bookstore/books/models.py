@@ -24,6 +24,9 @@ class Book(models.Model):
     )
     authors = models.ManyToManyField("authors.Author", related_name="books")
 
+    class Meta:
+        unique_together = [("name", "edition", "publication_year")]
+
     def __str__(self):
         """Unicode representation of Book"""
         return f"{self.name} ({self.edition} - {self.publication_year})"
