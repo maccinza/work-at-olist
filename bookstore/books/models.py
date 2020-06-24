@@ -23,3 +23,12 @@ class Book(models.Model):
         ],
     )
     authors = models.ManyToManyField("authors.Author", related_name="books")
+
+    def __str__(self):
+        """Unicode representation of Book"""
+        return f"{self.name} ({self.edition} - {self.publication_year})"
+
+    def save(self, *args, **kwargs):
+        """Custom save method to enforce validation"""
+        self.full_clean()
+        return super().save(*args, **kwargs)
