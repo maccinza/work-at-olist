@@ -10,6 +10,7 @@ from rest_framework.serializers import (
     ListSerializer,
     ModelSerializer,
 )
+from rest_framework_friendly_errors.mixins import FriendlyErrorMessagesMixin
 
 
 class Operation(Enum):
@@ -17,7 +18,7 @@ class Operation(Enum):
     UPDATE = "update"
 
 
-class CustomListSerializer(ListSerializer):
+class CustomListSerializer(FriendlyErrorMessagesMixin, ListSerializer):
     def to_representation(self, data):
         """
         List of object instances -> List of dicts of primitive datatypes.
@@ -33,7 +34,7 @@ class CustomListSerializer(ListSerializer):
         )
 
 
-class BookSerializer(ModelSerializer):
+class BookSerializer(FriendlyErrorMessagesMixin, ModelSerializer):
     """Serializer for Book data model"""
 
     authors = CustomListSerializer(child=IntegerField())

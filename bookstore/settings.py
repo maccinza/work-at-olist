@@ -131,8 +131,10 @@ SILENCED_SYSTEM_CHECKS = ["rest_framework.W001"]
 
 REST_FRAMEWORK = {
     "PAGE_SIZE": 1000,
+    "EXCEPTION_HANDLER": (
+        "rest_framework_friendly_errors.handlers.friendly_exception_handler"
+    ),
 }
-
 
 MIN_EDITION = os.environ.get("MIN_EDITION", 1)
 MIN_PUBLICATION_YEAR = os.environ.get("MIN_PUBLICATION_YEAR", 1500)

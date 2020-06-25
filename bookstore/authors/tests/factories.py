@@ -8,3 +8,4 @@ class AuthorFactory(DjangoModelFactory):
 
     class Meta:
         model = Author
+        django_get_or_create = ("name",)
