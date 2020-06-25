@@ -1,11 +1,10 @@
-import random
 from datetime import date
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
 
 from books.models import Book
-from books.tests.base import BaseBooksTests
+from books.tests.base import BaseBooksTests, get_unique_from_sequence
 from books.tests.factories import BookFactory
 
 
@@ -13,12 +12,14 @@ class TestBook(BaseBooksTests):
     def test_create_book(self):
         """It is possible to create a Book and insert it into the database"""
         self.assertEqual(Book.objects.count(), 0)
-        authors = random.choices(self.authors, k=2)
+
+        authors = get_unique_from_sequence(self.authors, 2)
         book = BookFactory.create(authors=authors)
         retrieved_book = Book.objects.first()
+
         self.assertEqual(Book.objects.count(), 1)
         self.assertEqual(retrieved_book, book)
-        self.assertEqual(retrieved_book.authors.all().count(), len(authors))
+        self.assertEqual(retrieved_book.authors.count(), len(authors))
         for author in retrieved_book.authors.all():
             self.assertIn(author, authors)
 
@@ -35,7 +36,7 @@ class TestBook(BaseBooksTests):
         }
 
         self.assertEqual(Book.objects.count(), 0)
-        authors = random.choices(self.authors, k=2)
+        authors = get_unique_from_sequence(self.authors, 2)
         with self.assertRaises(ValidationError) as raised:
             BookFactory.create(authors=authors, edition=0)
         self.assertEqual(raised.exception.message_dict, expected_errors)
@@ -54,7 +55,7 @@ class TestBook(BaseBooksTests):
         }
 
         self.assertEqual(Book.objects.count(), 0)
-        authors = random.choices(self.authors, k=2)
+        authors = get_unique_from_sequence(self.authors, 2)
         with self.assertRaises(ValidationError) as raised:
             BookFactory.create(authors=authors, publication_year=1200)
         self.assertEqual(raised.exception.message_dict, expected_errors)
@@ -86,7 +87,7 @@ class TestBook(BaseBooksTests):
         }
 
         self.assertEqual(Book.objects.count(), 0)
-        authors = random.choices(self.authors, k=2)
+        authors = get_unique_from_sequence(self.authors, 2)
         book_parameters = {
             "name": "Duplicate Book",
             "edition": 1,

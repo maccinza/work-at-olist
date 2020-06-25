@@ -1,15 +1,12 @@
 import json
-from random import choices
 
 from django.conf import settings
 from django.urls import reverse
 
 from books.models import Book
-from books.tests.base import BaseBooksTests
+from books.tests.base import BaseBooksTests, get_unique_from_sequence
 from rest_framework import status
 from rest_framework.test import APITestCase
-
-TEST_SERVER = "http://testserver"
 
 
 class BooksAPITests(BaseBooksTests, APITestCase):
@@ -19,19 +16,18 @@ class BooksAPITests(BaseBooksTests, APITestCase):
         API endpoint
         """
         self.assertEqual(Book.objects.count(), 0)
-        authors = choices(self.authors, k=2)
+        authors = get_unique_from_sequence(self.authors, 2)
         url = reverse("books-list")
         parameters = {
             "name": "Book Test I",
             "edition": 1,
             "publication_year": 2000,
-            "authors": [author.pk for author in authors],
+            "authors": sorted([author.pk for author in authors]),
         }
 
         response = self.client.post(
             url, data=json.dumps(parameters), content_type="application/json"
         )
-
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(Book.objects.count(), 1)
 
@@ -52,7 +48,7 @@ class BooksAPITests(BaseBooksTests, APITestCase):
             ]
         }
         self.assertEqual(Book.objects.count(), 0)
-        authors = choices(self.authors, k=2)
+        authors = get_unique_from_sequence(self.authors, 2)
         url = reverse("books-list")
         parameters = {
             "name": "Book Test I",
@@ -84,7 +80,7 @@ class BooksAPITests(BaseBooksTests, APITestCase):
             ]
         }
         self.assertEqual(Book.objects.count(), 0)
-        authors = choices(self.authors, k=2)
+        authors = get_unique_from_sequence(self.authors, 2)
         url = reverse("books-list")
         parameters = {
             "name": "Book Test I",

@@ -4,7 +4,7 @@ from factory.django import DjangoModelFactory
 
 
 class AuthorFactory(DjangoModelFactory):
+    name = Faker("name")
+
     class Meta:
         model = Author
-
-    name = Faker("name")

@@ -22,4 +22,3 @@ class BookFactory(DjangoModelFactory):
         if extracted:
             for author in extracted:
                 self.authors.add(author)
-            self.save()
