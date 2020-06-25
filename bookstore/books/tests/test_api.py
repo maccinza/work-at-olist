@@ -199,3 +199,144 @@ class BooksAPITests(BaseBooksTests, APITestCase):
 
         response_data = response.json()
         self.assertEqual(response_data, expected_errors)
+
+    def test_create_book_inexistent_author(self):
+        """
+        It returns an error when trying to create a Book through the API
+        endpoint with an author that does not exist in the database
+        """
+        expected_errors = {
+            "code": 4005,
+            "message": "Failed to find authors with the following ids: 10000",
+            "status_code": status.HTTP_404_NOT_FOUND,
+        }
+
+        self.assertEqual(Book.objects.count(), 0)
+        url = reverse("books-list")
+        parameters = {
+            "name": "Book Test I",
+            "edition": 1,
+            "publication_year": 2000,
+            "authors": [10000],
+        }
+
+        response = self.client.post(
+            url, data=json.dumps(parameters), content_type="application/json"
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(Book.objects.count(), 0)
+
+        response_data = response.json()
+        self.assertEqual(response_data, expected_errors)
+
+    def test_list_books(self):
+        """It lists all the registered books"""
+        authors = get_unique_from_sequence(self.authors, 3)
+        book_one = BookFactory.create(authors=authors[:2])
+        book_two = BookFactory.create(authors=authors[2:])
+
+        serialized_data = [
+            {
+                "id": book.pk,
+                "name": book.name,
+                "edition": book.edition,
+                "publication_year": book.publication_year,
+                "authors": sorted(
+                    [author.pk for author in book.authors.all()]
+                ),
+            }
+            for book in [book_one, book_two]
+        ]
+
+        url = reverse("books-list")
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_data = response.json()
+        self.assertEqual(response_data, serialized_data)
+
+    def test_list_no_books(self):
+        """
+        It returns an empty list when listing books and there are
+        none registered
+        """
+        url = reverse("books-list")
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_data = response.json()
+        self.assertEqual(response_data, [])
+
+    def test_list_books_with_filters(self):
+        """It is possible to filter books by their attributes"""
+        authors = get_unique_from_sequence(self.authors, 3)
+        first_book = {
+            "name": "This is the First Book",
+            "edition": 2,
+            "publication_year": 2000,
+            "authors": authors[:2],
+        }
+        second_book = {
+            "name": "Another publication",
+            "edition": 5,
+            "publication_year": 1989,
+            "authors": authors[2:],
+        }
+
+        book_one = BookFactory.create(**first_book)
+        book_two = BookFactory.create(**second_book)
+
+        url = reverse("books-list")
+
+        expected_data = [
+            {
+                "id": book_one.pk,
+                "name": book_one.name,
+                "edition": book_one.edition,
+                "publication_year": book_one.publication_year,
+                "authors": sorted(
+                    [author.pk for author in book_one.authors.all()]
+                ),
+            }
+        ]
+
+        # filters by name partial match
+        response = self.client.get(url, {"name": "First"})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        response_data = response.json()
+        self.assertEqual(len(response_data), 1)
+        self.assertEqual(response_data, expected_data)
+
+        # filters by name publication_year
+        response = self.client.get(url, {"publication_year": 2000})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        response_data = response.json()
+        self.assertEqual(len(response_data), 1)
+        self.assertEqual(response_data, expected_data)
+
+        expected_data = [
+            {
+                "id": book_two.pk,
+                "name": book_two.name,
+                "edition": book_two.edition,
+                "publication_year": book_two.publication_year,
+                "authors": sorted(
+                    [author.pk for author in book_two.authors.all()]
+                ),
+            }
+        ]
+
+        # filters by name edition
+        response = self.client.get(url, {"edition": 5})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        response_data = response.json()
+        self.assertEqual(len(response_data), 1)
+        self.assertEqual(response_data, expected_data)
+
+        # filters by author id
+        response = self.client.get(url, {"authors": f"{authors[2].pk},"})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        response_data = response.json()
+        self.assertEqual(len(response_data), 1)
+        self.assertEqual(response_data, expected_data)
