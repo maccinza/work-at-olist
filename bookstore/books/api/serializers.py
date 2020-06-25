@@ -24,9 +24,13 @@ class CustomListSerializer(ListSerializer):
         """
         iterable = data.all() if isinstance(data, models.Manager) else data
         if len(iterable) > 0 and isinstance(iterable[0], Author):
-            return [self.child.to_representation(item.pk) for item in iterable]
+            return sorted(
+                [self.child.to_representation(item.pk) for item in iterable]
+            )
 
-        return [self.child.to_representation(item) for item in iterable]
+        return sorted(
+            [self.child.to_representation(item) for item in iterable]
+        )
 
 
 class BookSerializer(ModelSerializer):
