@@ -32,7 +32,7 @@ class BookFilter(FilterSet):
 
     def authors_filter(self, queryset, field_name, value):
         if value:
-            pks = value.split(",")
+            pks = [pk for pk in value.split(",") if pk]
             if not all(item.isdigit() for item in pks):
                 raise ValidationError(
                     {"detail": f"Not all values in [{value}] are integers"}
