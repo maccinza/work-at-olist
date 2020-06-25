@@ -3,23 +3,13 @@ from datetime import date
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
-from django.test import TestCase
 
-from authors.models import Author
-from authors.tests.factories import AuthorFactory
 from books.models import Book
+from books.tests.base import BaseBooksTests
 from books.tests.factories import BookFactory
 
 
-class TestBook(TestCase):
-    def setUp(self, *args, **kwargs):
-        self.authors = AuthorFactory.create_batch(10)
-        super().setUp(*args, **kwargs)
-
-    def tearDown(self, *args, **kwargs):
-        Author.objects.all().delete()
-        super().setUp(*args, **kwargs)
-
+class TestBook(BaseBooksTests):
     def test_create_book(self):
         """It is possible to create a Book and insert it into the database"""
         self.assertEqual(Book.objects.count(), 0)
