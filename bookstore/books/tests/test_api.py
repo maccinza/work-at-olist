@@ -340,3 +340,158 @@ class BooksAPITests(BaseBooksTests, APITestCase):
         response_data = response.json()
         self.assertEqual(len(response_data), 1)
         self.assertEqual(response_data, expected_data)
+
+    def test_retrieve_book(self):
+        """It is possible to retrieve a book with its id on the endpoint"""
+        authors = get_unique_from_sequence(self.authors, 2)
+        book = BookFactory.create(authors=authors)
+        expected_data = {
+            "id": book.pk,
+            "name": book.name,
+            "edition": book.edition,
+            "publication_year": book.publication_year,
+            "authors": sorted([author.pk for author in book.authors.all()]),
+        }
+
+        url = reverse("books-list")
+        url = f"{url}/{book.pk}"
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        response_data = response.json()
+        self.assertEqual(response_data, expected_data)
+
+    def test_retrieve_inexistent_book(self):
+        """
+        It fails to retrieve a book that does not exist returning an error
+        message
+        """
+        expected_data = {
+            "code": None,
+            "message": "Not found.",
+            "status_code": status.HTTP_404_NOT_FOUND,
+        }
+        url = reverse("books-list")
+        url = f"{url}/1"
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        response_data = response.json()
+        self.assertEqual(response_data, expected_data)
+
+    def test_update_book(self):
+        """
+        It fully updates a book with the given attributes through the API
+        endpoint
+        """
+        new_name = "Updated Book Name"
+        new_edition = 42
+
+        authors = get_unique_from_sequence(self.authors, 2)
+        book = BookFactory.create(authors=authors)
+        self.assertEqual(Book.objects.count(), 1)
+
+        retrieved_book = Book.objects.get(pk=book.pk)
+        self.assertEqual(retrieved_book.name, book.name)
+        self.assertEqual(retrieved_book.edition, book.edition)
+
+        parameters = {
+            "name": new_name,
+            "edition": new_edition,
+            "publication_year": book.publication_year,
+            "authors": [author.pk for author in book.authors.all()],
+        }
+
+        url = reverse("books-list")
+        url = f"{url}/{book.pk}"
+
+        response = self.client.put(
+            url, json.dumps(parameters), content_type="application/json"
+        )
+        self.assertEqual(Book.objects.count(), 1)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        response_data = response.json()
+        self.assertEqual(response_data["id"], book.pk)
+        self.assertEqual(response_data["name"], new_name)
+        self.assertEqual(response_data["edition"], new_edition)
+        self.assertEqual(
+            response_data["publication_year"], book.publication_year
+        )
+        self.assertEqual(
+            response_data["authors"],
+            sorted([author.pk for author in book.authors.all()]),
+        )
+
+    def test_update_book_missing_parameters(self):
+        """
+        It fails to fully update a book through the API when there is a
+        missing parameter
+        """
+        new_name = "Updated Book Name"
+
+        authors = get_unique_from_sequence(self.authors, 2)
+        book = BookFactory.create(authors=authors)
+
+        parameters = {
+            "name": new_name,
+            "authors": [author.pk for author in book.authors.all()],
+        }
+        expected_data = {
+            "code": "1000",
+            "message": "Validation Failed",
+            "errors": [
+                {
+                    "code": "2003",
+                    "field": "edition",
+                    "message": "This field is required.",
+                },
+                {
+                    "code": "2003",
+                    "field": "publication_year",
+                    "message": "This field is required.",
+                },
+            ],
+        }
+        url = reverse("books-list")
+        url = f"{url}/{book.pk}"
+        response = self.client.put(
+            url, json.dumps(parameters), content_type="application/json"
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        response_data = response.json()
+        self.assertEqual(response_data, expected_data)
+
+    def test_update_empty_authors(self):
+        """It fails to fully update book when providing an empty authors list"""
+        new_name = "Updated Book Name"
+        new_edition = 42
+
+        authors = get_unique_from_sequence(self.authors, 2)
+        book = BookFactory.create(authors=authors)
+        self.assertEqual(Book.objects.count(), 1)
+
+        retrieved_book = Book.objects.get(pk=book.pk)
+        self.assertEqual(retrieved_book.name, book.name)
+        self.assertEqual(retrieved_book.edition, book.edition)
+
+        parameters = {
+            "name": new_name,
+            "edition": new_edition,
+            "publication_year": book.publication_year,
+            "authors": [],
+        }
+
+        expected_data = {
+            "code": None,
+            "message": "Please provide at least one author id",
+            "status_code": status.HTTP_400_BAD_REQUEST,
+        }
+
+        url = reverse("books-list")
+        url = f"{url}/{book.pk}"
+
+        response = self.client.put(
+            url, json.dumps(parameters), content_type="application/json"
+        )
+        self.assertEqual(Book.objects.count(), 1)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        response_data = response.json()
+        self.assertEqual(response_data, expected_data)
